@@ -22,6 +22,7 @@ public class PaymentsDbContext : DbContext
             entity.Property(p => p.Currency).IsRequired().HasMaxLength(3);
             entity.Property(p => p.Status).IsRequired().HasMaxLength(50);
             entity.Property(p => p.CreatedAt).IsRequired();
+            entity.Property(p => p.IdempotencyKey).IsRequired();  
         });
     }
 }

@@ -11,11 +11,11 @@ builder.Services.AddSwaggerGen();
 
 // Configure DbContext with in-memory database for basic template
 builder.Services.AddDbContext<PaymentsDbContext>(options =>
-    options.UseInMemoryDatabase("PaymentsDb"));
+    options.UseSqlite("Data Source=memory:payments.db")); // Use SQLite for simplicity
 
 // Register services
-builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
-builder.Services.AddScoped<IPaymentService, PaymentService>();
+// builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
+// builder.Services.AddScoped<IPaymentService, PaymentService>();
 
 var app = builder.Build();
 

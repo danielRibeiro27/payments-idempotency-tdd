@@ -1,3 +1,4 @@
+using System.Data;
 using Microsoft.AspNetCore.Mvc;
 using Payments.Domain;
 using Payments.Service;
@@ -29,7 +30,18 @@ public class PaymentsController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<Payment>> CreatePayment([FromBody] Payment payment)
     {
-        var createdPayment = await _paymentService.CreatePaymentAsync(payment);
-        return CreatedAtAction(nameof(GetPayment), new { id = createdPayment.Id }, createdPayment);
+        try
+        {
+            var createdPayment = await _paymentService.CreatePaymentAsync(payment);
+            return CreatedAtAction(nameof(GetPayment), new { id = createdPayment.Id }, createdPayment);
+        }
+        catch(DBConcurrencyException)
+        {
+            return Conflict("A payment with the same idempotency key already exists.");
+        }
+        catch(InvalidOperationException  ex)
+        {
+            return Conflict(ex.Message);
+        }
     }
 }
