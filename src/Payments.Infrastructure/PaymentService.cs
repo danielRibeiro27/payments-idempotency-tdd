@@ -19,8 +19,14 @@ public class PaymentService : IPaymentService
 
     public async Task<Payment> CreatePaymentAsync(Payment payment)
     {
-        payment.Id = Guid.NewGuid();
-        payment.CreatedAt = DateTime.UtcNow;
-        return await _repository.AddAsync(payment);
+        var newPayment = new Payment
+        {
+            Id = Guid.NewGuid(),
+            Amount = payment.Amount,
+            Currency = payment.Currency,
+            Status = payment.Status,
+            CreatedAt = DateTime.UtcNow
+        };
+        return await _repository.AddAsync(newPayment);
     }
 }

@@ -1,6 +1,17 @@
 @Payments.Api_HostAddress = http://localhost:5186
 
-GET {{Payments.Api_HostAddress}}/weatherforecast/
+GET {{Payments.Api_HostAddress}}/api/payments/00000000-0000-0000-0000-000000000001
 Accept: application/json
+
+###
+
+POST {{Payments.Api_HostAddress}}/api/payments
+Content-Type: application/json
+
+{
+  "amount": 100.00,
+  "currency": "USD",
+  "status": "Pending"
+}
 
 ###
