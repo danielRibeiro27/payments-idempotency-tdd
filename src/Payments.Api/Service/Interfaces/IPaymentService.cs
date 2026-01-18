@@ -1,6 +1,6 @@
-using Payments.Domain;
+using Payments.Api.Domain;
 
-namespace Payments.Service;
+namespace Payments.Api.Service.Interfaces;
 
 public interface IPaymentService
 {

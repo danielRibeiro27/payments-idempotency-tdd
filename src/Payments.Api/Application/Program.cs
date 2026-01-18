@@ -1,20 +1,22 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Payments.Domain;
-using Payments.Infrastructure;
-using Payments.Service;
+using Payments.Api.Domain;
+using Payments.Api.Infrastructure;
+using Payments.Api.Infrastructure.Implementations;
+using Payments.Api.Infrastructure.Interfaces;
+using Payments.Api.Service.Implementations;
+using Payments.Api.Service.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddOpenApi(); // Register OpenAPI services
-builder.Services.AddDbContext<PaymentsDbContext>(options =>
-    options.UseSqlite("Data Source=memory:payments.db")); // SQLite config
+builder.Services.AddOpenApi();
+builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
+builder.Services.AddScoped<IPaymentService, PaymentService>();
+builder.Services.AddDbContext<PaymentsDbContext>(options => options.UseSqlite("Data Source=memory:payments.db"));
 
 var app = builder.Build();
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi(); // Cria o endpoint /openapi/v1.json
-}
+if (app.Environment.IsDevelopment()) app.MapOpenApi(); // Cria o endpoint /openapi/v1.json
+
 app.UseHttpsRedirection();
 
 // Minimal API endpoints

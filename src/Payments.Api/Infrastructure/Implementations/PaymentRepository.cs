@@ -1,8 +1,7 @@
-using Microsoft.EntityFrameworkCore;
-using Payments.Domain;
-using Payments.Service;
+using Payments.Api.Infrastructure.Interfaces;
+using Payments.Api.Domain;
 
-namespace Payments.Infrastructure;
+namespace Payments.Api.Infrastructure.Implementations;
 
 public class PaymentRepository(PaymentsDbContext context) : IPaymentRepository
 {

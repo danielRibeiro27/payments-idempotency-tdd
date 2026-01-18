@@ -1,4 +1,4 @@
-namespace Payments.Domain;
+namespace Payments.Api.Domain;
 
 public class Payment
 {
