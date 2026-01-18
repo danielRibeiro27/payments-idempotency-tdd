@@ -3,12 +3,8 @@ using Payments.Domain;
 
 namespace Payments.Infrastructure;
 
-public class PaymentsDbContext : DbContext
+public class PaymentsDbContext(DbContextOptions<PaymentsDbContext> options) : DbContext(options)
 {
-    public PaymentsDbContext(DbContextOptions<PaymentsDbContext> options) : base(options)
-    {
-    }
-
     public DbSet<Payment> Payments { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

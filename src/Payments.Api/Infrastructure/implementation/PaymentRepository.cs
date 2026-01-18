@@ -4,14 +4,9 @@ using Payments.Service;
 
 namespace Payments.Infrastructure;
 
-public class PaymentRepository : IPaymentRepository
+public class PaymentRepository(PaymentsDbContext context) : IPaymentRepository
 {
-    private readonly PaymentsDbContext _context;
-
-    public PaymentRepository(PaymentsDbContext context)
-    {
-        _context = context;
-    }
+    private readonly PaymentsDbContext _context = context;
 
     public async Task<Payment?> GetByIdAsync(Guid id)
     {
