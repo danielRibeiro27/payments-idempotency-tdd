@@ -17,6 +17,12 @@ builder.Services.AddDbContext<PaymentsDbContext>(options => options.UseSqlite("D
 var app = builder.Build();
 if (app.Environment.IsDevelopment()) app.MapOpenApi(); // Cria o endpoint /openapi/v1.json
 
+using(var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<PaymentsDbContext>();
+    dbContext.Database.EnsureCreated();
+}
+
 app.UseHttpsRedirection();
 
 // Minimal API endpoints
@@ -28,7 +34,7 @@ app.MapGet("/api/payments/{id:guid}", async (Guid id, [FromServices]IPaymentServ
         return Results.NotFound();
     }
     return Results.Ok(payment);
-});
+}).WithName("GetPayment");
 
 app.MapPost("/api/payments", async (Payment payment, [FromServices]IPaymentService paymentService) =>
 {
@@ -45,6 +51,6 @@ app.MapPost("/api/payments", async (Payment payment, [FromServices]IPaymentServi
     {
         return Results.Conflict(ex.Message);
     }
-});
+}).WithName("CreatePayment");
 
 app.Run();

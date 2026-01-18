@@ -1,17 +1,19 @@
 using Payments.Api.Service.Interfaces;
 using Payments.Api.Domain;
+using Payments.Api.Infrastructure.Interfaces;
 
 namespace Payments.Api.Service.Implementations;
 
-public class PaymentService : IPaymentService
+public class PaymentService (IPaymentRepository paymentRepository): IPaymentService 
 {
-    public Task<Payment> CreatePaymentAsync(Payment payment)
+    private readonly IPaymentRepository _paymentRepository = paymentRepository;
+    public async Task<Payment> CreatePaymentAsync(Payment payment)
     {
-        throw new NotImplementedException();
+        return await _paymentRepository.AddAsync(payment);
     }
 
-    public Task<Payment?> GetPaymentByIdAsync(Guid id)
+    public async Task<Payment?> GetPaymentByIdAsync(Guid id)
     {
-        throw new NotImplementedException();
+        return await _paymentRepository.GetByIdAsync(id);
     }
 }
