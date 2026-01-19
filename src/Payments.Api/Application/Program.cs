@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Payments.Api.Domain;
+using Payments.Api.Domain.Implementations;
 using Payments.Api.Infrastructure;
 using Payments.Api.Infrastructure.Implementations;
 using Payments.Api.Infrastructure.Interfaces;

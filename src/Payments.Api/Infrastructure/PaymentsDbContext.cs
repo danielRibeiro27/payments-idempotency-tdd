@@ -1,11 +1,11 @@
 using Microsoft.EntityFrameworkCore;
-using Payments.Api.Domain;
+using Payments.Api.Domain.Implementations;
 
 namespace Payments.Api.Infrastructure;
 
 public class PaymentsDbContext(DbContextOptions<PaymentsDbContext> options) : DbContext(options)
 {
-    public DbSet<Payment> Payments { get; set; }
+    public virtual DbSet<Payment> Payments { get; set; } //virtual for mocking
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
