@@ -15,6 +15,7 @@ namespace Payments.UnitTests;
 //domain model properties should be created correctly
 //domain model keys should be unique and valid
 //domain model status should be set correctly
+//domain model should validate itself correctly
 
 public class PaymentsDomain_IsPaymentsShould
 {
@@ -49,7 +50,7 @@ public class PaymentsDomain_IsPaymentsShould
     public void Property_Status_ShouldBeCreatedCorrectly()
     {
         var payment = new Payment(75, "AUD", "idempotency-key-111");
-        Assert.False(string.IsNullOrWhiteSpace(payment.Status));
+        Assert.False(payment.Status == Status.Undefined);
     }
 
     [Fact]

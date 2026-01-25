@@ -1,9 +1,8 @@
-using Payments.Api.Domain.Interfaces;
-
+using Payments.Api.Domain.Implementations;
 namespace Payments.Api.Infrastructure.Interfaces;
 
 public interface IPaymentRepository
 {
-    Task<IPayment?> GetByIdAsync(Guid id);
-    Task<IPayment> AddAsync(IPayment payment);
+    Task<Payment?> GetByIdAsync(Guid id);
+    Task<Payment> AddAsync(Payment payment);
 }
