@@ -18,7 +18,10 @@ public class PaymentsDbContext(DbContextOptions<PaymentsDbContext> options) : Db
             entity.Property(p => p.Currency).IsRequired().HasMaxLength(3);
             entity.Property(p => p.Status).IsRequired().HasMaxLength(50);
             entity.Property(p => p.CreatedAt).IsRequired();
-            entity.Property(p => p.IdempotencyKey).IsRequired();  
+            entity.Property(p => p.IdempotencyKey).IsRequired();
+            
+            // Unique index on IdempotencyKey for idempotency enforcement
+            entity.HasIndex(p => p.IdempotencyKey).IsUnique();
         });
     }
 }
