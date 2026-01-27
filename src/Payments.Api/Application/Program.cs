@@ -12,6 +12,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddOpenApi();
 builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
+builder.Services.AddSingleton<IRetryService, RetryService>();
 builder.Services.AddDbContext<PaymentsDbContext>(options => options.UseSqlite("Data Source=memory:payments.db"));
 
 var app = builder.Build();
@@ -54,3 +55,6 @@ app.MapPost("/api/payments", async (Payment payment, [FromServices]IPaymentServi
 }).WithName("CreatePayment");
 
 app.Run();
+
+// Make Program accessible for integration tests
+public partial class Program { }

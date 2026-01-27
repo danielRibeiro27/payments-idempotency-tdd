@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using Payments.Api.Infrastructure.Interfaces;
 using Payments.Api.Domain;
 
@@ -10,6 +11,12 @@ public class PaymentRepository(PaymentsDbContext context) : IPaymentRepository
     public async Task<Payment?> GetByIdAsync(Guid id)
     {
         return await _context.Payments.FindAsync(id);
+    }
+
+    public async Task<Payment?> GetByIdempotencyKeyAsync(string idempotencyKey)
+    {
+        return await _context.Payments
+            .FirstOrDefaultAsync(p => p.IdempotencyKey == idempotencyKey);
     }
 
     public async Task<Payment> AddAsync(Payment payment)
