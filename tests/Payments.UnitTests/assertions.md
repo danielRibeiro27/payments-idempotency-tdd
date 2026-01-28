@@ -7,12 +7,35 @@
 5. Fire events/audit
 6. Response (status, events)
 
-## Assertions
+## Assertions Status
 
-- [ ] Payment should be processed successfully
-- [ ] Payment operations should be idempotent
-- [ ] Payment should be added to DB
-- [ ] Service should call PSP/Gateway
-- [ ] Payment status should be updated accordingly
-- [ ] Events/audit should be fired
-- [ ] Response should contain correct status and events
+### Domain Tests
+- [x] Payment should be created successfully
+- [x] Payment properties should be created correctly
+- [x] Payment IDs should be unique
+- [x] Payment validation should work correctly
+
+### Service Tests  
+- [x] Payment should be processed successfully
+- [x] Payment operations should be idempotent
+- [x] Payment should be added to DB
+- [x] Service should call PSP/Gateway
+- [x] Payment status should be updated accordingly
+- [x] Gateway failures should be handled
+
+### Retry Policy Tests
+- [x] Retry on transient exceptions
+- [x] Respect max retry count  
+- [x] No retry on business errors
+- [x] Result-based retry predicate
+
+### Integration Tests
+- [x] Create payment endpoint
+- [x] Get payment endpoint
+- [x] Idempotent behavior
+- [x] Concurrent request handling
+- [x] Gateway failure handling
+
+## Not Implemented (Out of Scope for MVP)
+- [ ] Events/audit firing
+- [ ] Functional/E2E tests
