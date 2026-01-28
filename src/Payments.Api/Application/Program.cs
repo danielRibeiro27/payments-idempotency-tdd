@@ -11,6 +11,14 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
 builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
+builder.Services.AddSingleton<IRetryPolicy>(new ExponentialBackoffRetryPolicy(new RetryOptions
+{
+    MaxRetries = 3,
+    InitialDelayMs = 100,
+    BackoffMultiplier = 2.0,
+    MaxDelayMs = 5000
+}));
+builder.Services.AddScoped<IPaymentGateway, PaymentGateway>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddDbContext<PaymentsDbContext>(options => options.UseSqlite("Data Source=memory:payments.db"));
 
@@ -54,3 +62,6 @@ app.MapPost("/api/payments", async (Payment payment, [FromServices]IPaymentServi
 }).WithName("CreatePayment");
 
 app.Run();
+
+// Make Program accessible to WebApplicationFactory for integration tests
+public partial class Program { }
