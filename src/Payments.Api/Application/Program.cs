@@ -62,3 +62,6 @@ app.MapPost("/api/payments", async (Payment payment, [FromServices]IPaymentServi
 }).WithName("CreatePayment");
 
 app.Run();
+
+// Make Program accessible to WebApplicationFactory for integration tests
+public partial class Program { }
