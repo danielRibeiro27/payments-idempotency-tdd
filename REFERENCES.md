@@ -15,3 +15,4 @@
 
 ## Testing & Quality Engineering
 - [Integration Testing: A Comprehensive Guide](https://medium.com/@josueparra2892/integration-testing-a-comprehensive-guide-851c5e46e1d5)
+- Some pages of the book TDD. Desenvolvimento Guiado por Testes (Kent Beck)
