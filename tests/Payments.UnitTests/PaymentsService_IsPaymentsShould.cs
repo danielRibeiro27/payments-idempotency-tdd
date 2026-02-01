@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Microsoft.EntityFrameworkCore;
 using Moq;
 using Payments.Api.Domain.Implementations;
@@ -8,34 +9,18 @@ namespace Payments.UnitTests;
 
 public class PaymentsService_IsPaymentsShould
 {
-    //payment.api expected flow:
-    // 1. validate req
-    // 2. register payment (with idempotency)
-    // 3. calls PSP/Gateway (with idempotency)
-    // 4. update payment status
-    // 5. fire events/audit
-    // 6. response (status, events)
-
-    //assertions:
-    //happy path::
-    //service should return process success/failure - IMPLEMENTED
-    //service operations should be idempotent (safe to retry without side effects) - IMPLEMENTED
-    //service should call repo to register payment - IMPLEMENTED
-    //service should call psp/gateway - IMPLEMENTED
-    //service should update payment status accordingly
-    //service should fire events/audit - IMPLEMENTED
-    //unhappy path::
-    //service should handle psp/gateway failures - IMPLEMENTED
-    //service should handle repo failures - IMPLEMENTED
-    //!!not going to implement every assertion due to time constraints!!
-
     [Fact]
     public async Task Service_ShouldProcessPaymentSuccessfully()
     {
-        var payment = new Payment(100m, "USD", "unique-key-123"); //not mocking payments for its a domain core entity, it cannot be segregated from the rest of the system
+        var payment = new PaymentIntent(100m, "USD", Guid.NewGuid()); // Not mocking PaymentIntent as it's a core domain entity
         var mockRepository = new Mock<IPaymentRepository>();
-        mockRepository.Setup(x => x.AddAsync(It.IsAny<Payment>())).ReturnsAsync(payment);
-        var paymentService = new PaymentService(mockRepository.Object);
+        mockRepository.Setup(x => x.UpdateAsync(It.IsAny<PaymentIntent>())).ReturnsAsync(payment);
+        mockRepository.Setup(x => x.GetOrAddByIdempotencyKey(It.IsAny<PaymentIntent>())).ReturnsAsync((true, payment));
+
+        var mockGateway = new Mock<IPaymentGateway>();
+        mockGateway.Setup(x => x.Process(It.IsAny<PaymentIntent>())).ReturnsAsync("Success");
+
+        var paymentService = new PaymentService(mockRepository.Object, mockGateway.Object);
         var result = await paymentService.CreatePaymentAsync(payment);
         Assert.True(result.Status == Status.Completed);
     }
@@ -43,37 +28,64 @@ public class PaymentsService_IsPaymentsShould
     [Fact]
     public async Task Service_ShouldNotProcessPaymentSuccessfully()
     {
-        var payment = new Payment(0, "USDD", ""); //not mocking payments for its a domain core entity, it cannot be segregated from the rest of the system
+        var payment = new PaymentIntent(0, "USDD", Guid.NewGuid()); // Not mocking PaymentIntent as it's a core domain entity
         var mockRepository = new Mock<IPaymentRepository>();
-        mockRepository.Setup(x => x.AddAsync(It.IsAny<Payment>())).ReturnsAsync(payment);
-        var paymentService = new PaymentService(mockRepository.Object);
+        mockRepository.Setup(x => x.UpdateAsync(It.IsAny<PaymentIntent>())).ReturnsAsync(payment);
+
+        var mockGateway = new Mock<IPaymentGateway>();
+        mockGateway.Setup(x => x.Process(It.IsAny<PaymentIntent>())).ReturnsAsync("Success");
+
+        var paymentService = new PaymentService(mockRepository.Object, mockGateway.Object);
         var result = await paymentService.CreatePaymentAsync(payment);
-        Assert.True(result.Status == Status.Failed);
+        Assert.True(result.Status == Status.Invalid);
     }
 
     [Fact]
-    public async Task Service_ShouldNotProcessTheSamePaymentTwice()
+    public async Task Service_Idempotency_SamePayload_ShouldReturnValidStatus_And_ShouldNotCallRepoOrGatewayMultipleTimes()
     {
-        var payment1 = new Payment(100m, "USD", "unique-key-123");
-        var payment2 = new Payment(200m, "USD", "unique-key-123");
+        Guid idempotencyKey1 = Guid.NewGuid();
+        Guid idempotencyKey2 = idempotencyKey1; //Same key to simulate retry
+        var payment1 = new PaymentIntent(100m, "USD", idempotencyKey1);
+        var payment2 = new PaymentIntent(100m, "USD", idempotencyKey2); // Same payload with same idempotency key (retry simulation)
         
+        var store = new ConcurrentDictionary<Guid, PaymentIntent>();
+
+        // Repo add method stores in the concurrent dictionary
         var mockRepository = new Mock<IPaymentRepository>();
-        mockRepository.Setup(x => x.AddAsync(payment1)).ReturnsAsync(payment1);
-        mockRepository.Setup(x => x.AddAsync(payment2)).ReturnsAsync(payment2);
+        mockRepository
+            .Setup(x => x.UpdateAsync(It.IsAny<PaymentIntent>()))
+            .ReturnsAsync((PaymentIntent p) =>
+            {
+                store.TryUpdate(p.IdempotencyKey, p, store[p.IdempotencyKey]);
+                return p;
+            });
 
-        var paymentService = new PaymentService(mockRepository.Object);
-        //no await, we want to test concurrency here
-        var result1 = paymentService.CreatePaymentAsync(payment1);
-        var result2 = paymentService.CreatePaymentAsync(payment2);
+        // GetOrAddByIdempotencyKey gets values from the concurrent dictionary
+        mockRepository
+            .Setup(x => x.GetOrAddByIdempotencyKey(It.IsAny<PaymentIntent>()))
+            .ReturnsAsync((PaymentIntent p) => 
+                store.TryAdd(p.IdempotencyKey, p) ? (true, p) : (false, store[p.IdempotencyKey]));
 
-        await Task.WhenAll(result1, result2);
+        // Mock gateway
+        var mockGateway = new Mock<IPaymentGateway>();
+        mockGateway.Setup(x => x.Process(It.IsAny<PaymentIntent>()))
+            .ReturnsAsync("Success");
 
-        //status should be completed for both since they are valid
-        Assert.True(result1.Result.Status == Status.Completed);
-        Assert.True(result2.Result.Status == Status.Completed);
+        var paymentService = new PaymentService(mockRepository.Object, mockGateway.Object);
 
-        //should call repository/payment gateway only once due to idempotency key
-        mockRepository.Verify(x => x.AddAsync(It.IsAny<Payment>()), Times.Exactly(1));
-        mockPaymentGateway.Verify(x => x.SendAsync(It.IsAny<Payment>()), Times.Exactly(1));
+        // Concurrent calls
+        Task<PaymentIntent> task1 = Task.Run(() => paymentService.CreatePaymentAsync(payment1));
+        Task<PaymentIntent> task2 = Task.Run(() => paymentService.CreatePaymentAsync(payment2));
+
+        await Task.WhenAll(task1, task2);
+
+        // Either one completed, the other pending (not processed again) or both completed (race condition)
+        Assert.True((task1?.Result.Status == Status.Completed && task2?.Result.Status == Status.Pending) || // 202: client should poll for status
+                    (task2?.Result.Status == Status.Completed && task1?.Result.Status == Status.Pending) || // 202: client should poll for status
+                    task1?.Result.Status == Status.Completed && task2?.Result.Status == Status.Completed); 
+                    
+        // Should call update and process only once
+        mockRepository.Verify(x => x.UpdateAsync(It.IsAny<PaymentIntent>()), Times.Exactly(1));
+        mockGateway.Verify(x => x.Process(It.IsAny<PaymentIntent>()), Times.Exactly(1));
     }
 }

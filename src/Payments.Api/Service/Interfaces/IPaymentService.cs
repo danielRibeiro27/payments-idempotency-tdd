@@ -4,6 +4,6 @@ namespace Payments.Api.Service.Interfaces;
 
 public interface IPaymentService
 {
-    Task<Payment?> GetPaymentByIdAsync(Guid id);
-    Task<Payment> CreatePaymentAsync(Payment payment);
+    Task<PaymentIntent?> GetPaymentByIdAsync(Guid id);
+    Task<PaymentIntent> CreatePaymentAsync(PaymentIntent payment);
 }

@@ -6,5 +6,6 @@ public enum Status
     Pending,
     Completed,
     Failed,
-    Refunded
+    Refunded,
+    Invalid
 }

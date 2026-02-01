@@ -12,10 +12,11 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddOpenApi();
 builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
+builder.Services.AddScoped<IPaymentGateway, PaymentGateway>();
 builder.Services.AddDbContext<PaymentsDbContext>(options => options.UseSqlite("Data Source=memory:payments.db"));
 
 var app = builder.Build();
-if (app.Environment.IsDevelopment()) app.MapOpenApi(); // Cria o endpoint /openapi/v1.json
+if (app.Environment.IsDevelopment()) app.MapOpenApi(); // Creates the /openapi/v1.json endpoint
 
 using(var scope = app.Services.CreateScope())
 {
@@ -36,7 +37,7 @@ app.MapGet("/api/payments/{id:guid}", async (Guid id, [FromServices]IPaymentServ
     return Results.Ok(payment);
 }).WithName("GetPayment");
 
-app.MapPost("/api/payments", async (Payment payment, [FromServices]IPaymentService paymentService) =>
+app.MapPost("/api/payments", async (PaymentIntent payment, [FromServices]IPaymentService paymentService) =>
 {
     try
     {
@@ -45,11 +46,15 @@ app.MapPost("/api/payments", async (Payment payment, [FromServices]IPaymentServi
     }
     catch (System.Data.DBConcurrencyException)
     {
-        return Results.Conflict("A payment with the same idempotency key already exists.");
+        return Results.Conflict("A payment intent with the same idempotency key already exists.");
     }
     catch (InvalidOperationException ex)
     {
         return Results.Conflict(ex.Message);
+    }
+    catch (Exception)
+    {
+        return Results.StatusCode(500);
     }
 }).WithName("CreatePayment");
 
