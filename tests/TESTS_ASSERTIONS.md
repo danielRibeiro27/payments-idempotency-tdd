@@ -13,7 +13,7 @@ The API is expected to follow this sequence:
 
 1. **Validate Request**
    - Validate request body and required headers.
-   - `Idempotency-Key` header must be present. (not implemented)
+   - `Idempotency-Key` header must be present (implemented as property).
 
 2. **Register Payment Intent (Idempotent)**
    - Persist or retrieve a payment intent using the idempotency key.
