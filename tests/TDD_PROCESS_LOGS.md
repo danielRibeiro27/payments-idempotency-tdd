@@ -39,7 +39,7 @@ The goal is traceability of design decisions, not completeness of refactors.
 - No interface available for mocking.
 
 ### GREEN
-- Introduced `IPayment` abstraction.
+- Introduced `IPayment` abstraction (but removed after).
 - Mocking becomes possible.
 
 ---
