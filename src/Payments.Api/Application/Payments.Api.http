@@ -1,17 +1,167 @@
-@Payments.Api_HostAddress = http://localhost:5186
+###############################################################################
+# Payment Intent API - HTTP Request Collection
+# OpenAPI 3.0 compliant documentation
+# Base URL: http://localhost:5186
+###############################################################################
 
-GET {{Payments.Api_HostAddress}}/api/payments/00000000-0000-0000-0000-000000000001
-Accept: application/json
+@baseUrl = http://localhost:5186
+@contentType = application/json
 
-###
+###############################################################################
+# GET /api/payments/{id}
+# Retrieves a payment intent by its unique identifier
+#
+# Path Parameters:
+#   - id (guid, required): The unique identifier of the payment intent
+#
+# Response Codes:
+#   - 200 OK: Payment intent found and returned
+#   - 404 Not Found: Payment intent with the specified ID does not exist
+###############################################################################
 
-POST {{Payments.Api_HostAddress}}/api/payments
-Content-Type: application/json
+### Get Payment - Success (200 OK)
+# @name GetPaymentSuccess
+GET {{baseUrl}}/api/payments/{{$guid}}
+Accept: {{contentType}}
+
+### Get Payment - Not Found (404)
+# @name GetPaymentNotFound
+GET {{baseUrl}}/api/payments/00000000-0000-0000-0000-000000000001
+Accept: {{contentType}}
+
+###############################################################################
+# POST /api/payments
+# Creates a new payment intent with idempotency support
+#
+# Request Body (application/json):
+#   - amount (decimal, required): Payment amount. Cannot be 0. Negative allowed for refunds.
+#   - currency (string, required): ISO 4217 3-letter currency code (e.g., "USD", "EUR")
+#   - idempotencyKey (guid, required): Unique key for idempotent request handling
+#
+# Response Codes:
+#   - 201 Created: Payment intent successfully created
+#   - 201 Created: Idempotent retry with same payload returns existing payment
+#   - 409 Conflict: Idempotency key exists with different payload
+#   - 500 Internal Server Error: Unexpected server error
+#
+# Note: Invalid payloads return 201 with Status="Invalid" (validation at service level)
+###############################################################################
+
+### Create Payment - Success (201 Created)
+# @name CreatePaymentSuccess
+POST {{baseUrl}}/api/payments
+Content-Type: {{contentType}}
 
 {
   "amount": 100.00,
   "currency": "USD",
-  "status": "Pending"
+  "idempotencyKey": "{{$guid}}"
 }
 
-###
+### Create Payment - Refund (negative amount) (201 Created)
+# @name CreatePaymentRefund
+POST {{baseUrl}}/api/payments
+Content-Type: {{contentType}}
+
+{
+  "amount": -50.00,
+  "currency": "USD",
+  "idempotencyKey": "{{$guid}}"
+}
+
+### Create Payment - Idempotent Retry (same idempotencyKey, same payload)
+# Run this twice with the same idempotencyKey to test idempotency
+# @name CreatePaymentIdempotentRetry
+POST {{baseUrl}}/api/payments
+Content-Type: {{contentType}}
+
+{
+  "amount": 75.00,
+  "currency": "EUR",
+  "idempotencyKey": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+}
+
+### Create Payment - Conflict (409)
+# Same idempotencyKey as above but different payload
+# @name CreatePaymentConflict
+POST {{baseUrl}}/api/payments
+Content-Type: {{contentType}}
+
+{
+  "amount": 999.99,
+  "currency": "GBP",
+  "idempotencyKey": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+}
+
+### Create Payment - Invalid Amount (201 with Status=Invalid)
+# Amount cannot be 0
+# @name CreatePaymentInvalidAmount
+POST {{baseUrl}}/api/payments
+Content-Type: {{contentType}}
+
+{
+  "amount": 0,
+  "currency": "USD",
+  "idempotencyKey": "{{$guid}}"
+}
+
+### Create Payment - Invalid Currency (201 with Status=Invalid)
+# Currency must be exactly 3 characters
+# @name CreatePaymentInvalidCurrency
+POST {{baseUrl}}/api/payments
+Content-Type: {{contentType}}
+
+{
+  "amount": 100.00,
+  "currency": "USDD",
+  "idempotencyKey": "{{$guid}}"
+}
+
+### Create Payment - Missing Idempotency Key (201 with Status=Invalid)
+# IdempotencyKey cannot be empty GUID
+# @name CreatePaymentMissingIdempotencyKey
+POST {{baseUrl}}/api/payments
+Content-Type: {{contentType}}
+
+{
+  "amount": 100.00,
+  "currency": "USD",
+  "idempotencyKey": "00000000-0000-0000-0000-000000000000"
+}
+
+###############################################################################
+# OpenAPI Schema Reference
+#
+# PaymentIntent:
+#   type: object
+#   properties:
+#     id:
+#       type: string
+#       format: uuid
+#       readOnly: true
+#     amount:
+#       type: number
+#       format: decimal
+#       description: Payment amount (negative for refunds, cannot be 0)
+#     currency:
+#       type: string
+#       minLength: 3
+#       maxLength: 3
+#       description: ISO 4217 currency code
+#     status:
+#       type: string
+#       enum: [Undefined, Pending, Completed, Failed, Refunded, Invalid]
+#       readOnly: true
+#     createdAt:
+#       type: string
+#       format: date-time
+#       readOnly: true
+#     idempotencyKey:
+#       type: string
+#       format: uuid
+#       description: Unique key for idempotent request handling
+#   required:
+#     - amount
+#     - currency
+#     - idempotencyKey
+###############################################################################
